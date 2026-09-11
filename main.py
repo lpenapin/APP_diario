@@ -11,6 +11,7 @@ from database import (
     SessionLocal, init_db, Usuario, MesPlanificado, 
     MetaMes, ActividadMes, RegistroActividadDiario, NotaDiario
 )
+from __init__ import gemini_secret  # Importamos la clave de Gemini desde __init__.py
 
 # Inicializamos las tablas al arrancar
 init_db()
@@ -182,11 +183,11 @@ def registrar_cierre_dia(datos: CierreDiaCreate, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "exitoso", "mensaje": "Cierre del día guardado correctamente."}
 
-#AQ.Ab8RN6LqyjbX9uoUTZsG7HcYv5CfJaWTfMD-K7ZRCzvJLuv4iw
+
 
 # Inicializar el cliente de Gemini (busca automáticamente la variable de entorno GEMINI_API_KEY)
 # O bien puedes pasar tu clave directamente: client = genai.Client(api_key="TU_API_KEY_AQUÍ")
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LqyjbX9uoUTZsG7HcYv5CfJaWTfMD-K7ZRCzvJLuv4iw"))
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", gemini_secret))  # Usamos la clave de Gemini desde __init__.py si no está en las variables de entorno
 
 # ==========================================
 # ENDPOINT DE INTELIGENCIA ARTIFICIAL
