@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diario de Hábitos</title>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --card:      #22263a;
+      --border:    #2e3350;
+      --accent:    #6c63ff;
+      --accent2:   #48e5c2;
+      --text:      #e8eaf0;
+      --muted:     #7b82a0;
+      --danger:    #ff6584;
+      --success:   #48e5c2;
+      --radius:    12px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.45);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 60px;
+    }
+
+    /* ─── Header ──────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-sub { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+
+    /* ─── Tabs ────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 24px 32px 0;
+    }
+    .tab-btn {
+      padding: 10px 22px;
+      border-radius: var(--radius) var(--radius) 0 0;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--card);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    /* ─── Main container ──────────────────────────── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .panel {
+      display: none;
+      padding-top: 28px;
+    }
+    .panel.active { display: block; }
+
+    /* ─── Cards ───────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: var(--accent2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ─── Form controls ───────────────────────────── */
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    input[type="text"], input[type="email"], input[type="number"],
+    input[type="date"], textarea, select {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.93rem;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    textarea { resize: vertical; min-height: 110px; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .form-group { margin-bottom: 16px; }
+
+    /* ─── Dynamic list inputs (metas / actividades) ─ */
+    .dyn-list { display: flex; flex-direction: column; gap: 8px; }
+    .dyn-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dyn-item input { flex: 1; }
+    .dyn-item .remove-btn {
+      background: none;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      border-radius: 6px;
+      width: 32px; height: 32px;
+      cursor: pointer;
+      font-size: 1rem;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .dyn-item .remove-btn:hover { background: rgba(255,101,132,0.12); }
+
+    .add-btn {
+      margin-top: 8px;
+      background: none;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    .add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ─── Checkboxes (hábitos) ────────────────────── */
+    .habit-list { display: flex; flex-direction: column; gap: 10px; }
+    .habit-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .habit-item:hover { border-color: var(--accent); }
+    .habit-item.checked {
+      border-color: var(--accent2);
+      background: rgba(72,229,194,0.07);
+    }
+    .habit-item input[type="checkbox"] { display: none; }
+    .check-box {
+      width: 22px; height: 22px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+    .habit-item.checked .check-box {
+      background: var(--accent2);
+      border-color: var(--accent2);
+      color: var(--bg);
+    }
+    .habit-name { font-size: 0.95rem; flex: 1; }
+
+    /* ─── Progress bar ────────────────────────────── */
+    .progress-wrap { margin-bottom: 20px; }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .progress-bar-bg {
+      height: 8px;
+      background: var(--surface);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 99px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* ─── Buttons ─────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 24px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: #5a52d5; }
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-ai {
+      background: linear-gradient(135deg, #6c63ff, #48e5c2);
+      color: #fff;
+    }
+    .btn-ai:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ─── Feedback / IA result ────────────────────── */
+    .feedback-box {
+      margin-top: 18px;
+      padding: 18px 20px;
+      background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(72,229,194,0.09));
+      border: 1px solid rgba(108,99,255,0.35);
+      border-radius: var(--radius);
+      font-size: 0.97rem;
+      line-height: 1.6;
+      display: none;
+      position: relative;
+    }
+    .feedback-box.show { display: block; }
+    .feedback-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      font-size: 0.8rem;
+      color: var(--accent2);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .cumplimiento-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 99px;
+      background: rgba(72,229,194,0.15);
+      color: var(--accent2);
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    /* ─── Toast ───────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      font-size: 0.88rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s;
+      z-index: 999;
+      max-width: 380px;
+      text-align: center;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    #toast.success { border-color: var(--success); color: var(--success); }
+    #toast.error   { border-color: var(--danger);  color: var(--danger);  }
+
+    /* ─── Section title ───────────────────────────── */
+    .section-info {
+      font-size: 0.83rem;
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 24px 0;
+    }
+
+    /* ─── Spinner ─────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── User selector ───────────────────────────── */
+    .user-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+    }
+    .user-bar label { text-transform: none; font-size: 0.85rem; margin: 0; }
+    .user-bar select { width: auto; padding: 6px 12px; }
+    .user-bar .user-id { color: var(--muted); }
+
+    /* ─── Metas display ───────────────────────────── */
+    .metas-display {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .meta-chip {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.92rem;
+    }
+    .meta-num {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(108,99,255,0.15);
+      border-radius: 4px;
+      padding: 2px 7px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    @media (max-width: 600px) {
+      .form-row { grid-template-columns: 1fr; }
+      header, .user-bar { padding: 16px; }
+      .tabs { padding: 16px 16px 0; }
+      .container { padding: 0 12px; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header>
+  <div>
+    <h1>📓 Diario de Hábitos</h1>
+    <div class="header-sub" id="header-date"></div>
+  </div>
+</header>
+
+<!-- ═══════════ USER BAR ═══════════ -->
+<div class="user-bar">
+  <label for="global-user-select">Usuario activo:</label>
+  <select id="global-user-select" onchange="onUserChange()">
+    <option value="">— seleccionar —</option>
+  </select>
+  <span class="user-id" id="user-id-display"></span>
+  <button class="btn btn-secondary" style="padding:6px 14px;font-size:0.82rem" onclick="openNewUserModal()">+ Nuevo usuario</button>
+</div>
+
+<!-- ═══════════ TABS ═══════════ -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('tab-mes')">📅 Planificar Mes</button>
+  <button class="tab-btn"       onclick="switchTab('tab-dia')">✅ Registro Diario</button>
+</div>
+
+<!-- ═══════════════════════════════════
+     PANEL 1: PLANIFICAR MES
+═══════════════════════════════════ -->
+<div class="container">
+<div id="tab-mes" class="panel active">
+
+  <!-- Mes y año -->
+  <div class="card">
+    <h2>📅 Mes a planificar</h2>
+    <p class="section-info">Define el mes y año para esta planificación. Solo puedes tener una planificación por mes.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="plan-anio">Año</label>
+        <input type="number" id="plan-anio" min="2020" max="2040" />
+      </div>
+      <div class="form-group">
+        <label for="plan-mes">Mes</label>
+        <select id="plan-mes">
+          <option value="1">Enero</option><option value="2">Febrero</option>
+          <option value="3">Marzo</option><option value="4">Abril</option>
+          <option value="5">Mayo</option><option value="6">Junio</option>
+          <option value="7">Julio</option><option value="8">Agosto</option>
+          <option value="9">Septiembre</option><option value="10">Octubre</option>
+          <option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metas del mes -->
+  <div class="card">
+    <h2>🎯 Metas del mes <span style="font-size:0.75rem;color:var(--muted);font-weight:400">(1–3 metas)</span></h2>
+    <p class="section-info">¿Qué quieres lograr este mes? Sé concreto y enfocado.</p>
+    <div class="dyn-list" id="metas-list">
+      <div class="dyn-item">
+        <input type="text" placeholder="Ej: Leer 2 libros este mes" />
+        <button class="remove-btn" onclick="removeItem(this)">✕</button>
+      </div>
+    </div>
+    <button class="add-btn" onclick="addMeta()">＋ Agregar meta</button>
+  </div>
+
+  <!-- Actividades diarias -->
+  <div class="card">
+    <h2>⚡ Actividades diarias <span style="font-size:0.75rem;color:var(--muted);font-weight:400">(5–10 actividades)</span></h2>
+    <p class="section-info">Define los hábitos que quieres practicar cada día este mes.</p>
+    <div class="dyn-list" id="actividades-list">
+      <div class="dyn-item">
+        <input type="text" placeholder="Ej: Hacer ejercicio 30 min" />
+        <button class="remove-btn" onclick="removeItem(this)">✕</button>
+      </div>
+      <div class="dyn-item">
+        <input type="text" placeholder="Ej: Leer 20 páginas" />
+        <button class="remove-btn" onclick="removeItem(this)">✕</button>
+      </div>
+      <div class="dyn-item">
+        <input type="text" placeholder="Ej: Meditar 10 min" />
+        <button class="remove-btn" onclick="removeItem(this)">✕</button>
+      </div>
+      <div class="dyn-item">
+        <input type="text" placeholder="Ej: No usar redes sociales antes del almuerzo" />
+        <button class="remove-btn" onclick="removeItem(this)">✕</button>
+      </div>
+      <div class="dyn-item">
+        <input type="text" placeholder="Ej: Dormir antes de las 11pm" />
+        <button class="remove-btn" onclick="removeItem(this)">✕</button>
+      </div>
+    </div>
+    <button class="add-btn" onclick="addActividad()">＋ Agregar actividad</button>
+  </div>
+
+  <!-- Submit -->
+  <div style="text-align:right;margin-bottom:32px">
+    <button class="btn btn-primary" id="btn-planificar" onclick="planificarMes()">
+      <span class="spinner" id="spinner-plan"></span>
+      Guardar planificación del mes
+    </button>
+  </div>
+
+</div><!-- /tab-mes -->
+
+
+<!-- ═══════════════════════════════════
+     PANEL 2: REGISTRO DIARIO
+═══════════════════════════════════ -->
+<div id="tab-dia" class="panel">
+
+  <!-- Fecha -->
+  <div class="card">
+    <h2>📆 Fecha de hoy</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="dia-fecha">Fecha del registro</label>
+        <input type="date" id="dia-fecha" onchange="cargarDiaActual()" />
+      </div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:16px">
+        <button class="btn btn-secondary" onclick="setToday()">Hoy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metas del mes (info) -->
+  <div class="card" id="card-metas-dia" style="display:none">
+    <h2>🎯 Mis metas de este mes</h2>
+    <div class="metas-display" id="metas-dia-list"></div>
+  </div>
+
+  <!-- Hábitos del día -->
+  <div class="card">
+    <h2>✅ Hábitos de hoy</h2>
+    <p class="section-info" id="habits-hint">Selecciona la fecha y carga tu planificación del mes para ver los hábitos.</p>
+
+    <div class="progress-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-label">
+        <span>Progreso del día</span>
+        <span id="progress-text">0 / 0</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+    </div>
+
+    <div class="habit-list" id="habit-list"></div>
+
+    <div style="margin-top:14px;display:none" id="load-habits-wrap">
+      <button class="btn btn-secondary" onclick="cargarDiaActual()">
+        🔄 Cargar hábitos del mes
+      </button>
+    </div>
+  </div>
+
+  <!-- Diario del día -->
+  <div class="card">
+    <h2>✍️ Mi diario de hoy</h2>
+    <p class="section-info">Escribe lo más relevante del día: logros, aprendizajes, cómo te sentiste.</p>
+    <div class="form-group">
+      <label for="diario-texto">Nota del día</label>
+      <textarea id="diario-texto" rows="5" placeholder="Hoy me sentí… logré… aprendí…"></textarea>
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="card">
+    <h2>💾 Guardar y obtener feedback</h2>
+    <p class="section-info">Guarda el registro del día y pide un mensaje motivacional personalizado de tu coach IA.</p>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btn-guardar" onclick="guardarDia()">
+        <span class="spinner" id="spinner-guardar"></span>
+        Guardar registro del día
+      </button>
+      <button class="btn btn-ai" id="btn-ia" onclick="pedirMotivacion()">
+        <span class="spinner" id="spinner-ia"></span>
+        ✨ Obtener feedback IA
+      </button>
+    </div>
+
+    <!-- Resultado de la IA -->
+    <div class="feedback-box" id="feedback-box">
+      <div class="feedback-meta">
+        <span>🤖 Coach IA</span>
+        <span class="cumplimiento-badge" id="feedback-badge"></span>
+      </div>
+      <div id="feedback-text"></div>
+    </div>
+  </div>
+
+</div><!-- /tab-dia -->
+</div><!-- /container -->
+
+<!-- ═══════════ TOAST ═══════════ -->
+<div id="toast"></div>
+
+<!-- ═══════════ NEW USER MODAL ═══════════ -->
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:100%;max-width:420px;box-shadow:var(--shadow)">
+    <h2 style="margin-bottom:20px;font-size:1.1rem">👤 Crear nuevo usuario</h2>
+    <div class="form-group">
+      <label for="new-nombre">Nombre</label>
+      <input type="text" id="new-nombre" placeholder="Tu nombre" />
+    </div>
+    <div class="form-group">
+      <label for="new-email">Email</label>
+      <input type="email" id="new-email" placeholder="tu@email.com" />
+    </div>
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearUsuario()">Crear</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════
+const API = 'http://127.0.0.1:8000';
+
+// Estado global
+let state = {
+  userId: null,
+  mesId: null,
+  actividades: [],   // [{id, nombre_actividad}]
+};
+
+// ─── Init ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const now = new Date();
+  document.getElementById('header-date').textContent =
+    now.toLocaleDateString('es', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // Default año/mes en planificación
+  document.getElementById('plan-anio').value = now.getFullYear();
+  document.getElementById('plan-mes').value  = now.getMonth() + 1;
+
+  // Default fecha diario = hoy
+  document.getElementById('dia-fecha').value = toISODate(now);
+
+  cargarUsuarios();
+});
+
+// ─── Tabs ────────────────────────────────────────
+function switchTab(tabId) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ─── Toast ───────────────────────────────────────
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  setTimeout(() => { el.className = ''; }, 3200);
+}
+
+// ─── Helpers ─────────────────────────────────────
+function toISODate(d) {
+  return d.toISOString().split('T')[0];
+}
+
+function setToday() {
+  document.getElementById('dia-fecha').value = toISODate(new Date());
+  cargarDiaActual();
+}
+
+function showSpinner(id, show) {
+  document.getElementById(id).style.display = show ? 'inline-block' : 'none';
+}
+
+// ─── Modal nuevo usuario ─────────────────────────
+function openNewUserModal() {
+  const overlay = document.getElementById('modal-overlay');
+  overlay.style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+  document.getElementById('new-nombre').value = '';
+  document.getElementById('new-email').value  = '';
+}
+
+// ═══════════════════════════════════════════════════
+//  USUARIOS
+// ═══════════════════════════════════════════════════
+async function cargarUsuarios() {
+  try {
+    const res = await fetch(`${API}/usuarios/`);
+    if (!res.ok) return;
+    const usuarios = await res.json();
+    const sel = document.getElementById('global-user-select');
+    sel.innerHTML = '<option value="">— seleccionar —</option>';
+    usuarios.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = `${u.nombre} (${u.email})`;
+      sel.appendChild(opt);
+    });
+    // Si hay exactamente uno, seleccionarlo automáticamente
+    if (usuarios.length === 1) {
+      sel.value = usuarios[0].id;
+      onUserChange();
+    }
+  } catch (e) {
+    // silencioso: el servidor puede no tener el endpoint /usuarios/ GET aún
+  }
+}
+
+function onUserChange() {
+  const sel = document.getElementById('global-user-select');
+  state.userId = sel.value ? parseInt(sel.value) : null;
+  document.getElementById('user-id-display').textContent =
+    state.userId ? `(ID: ${state.userId})` : '';
+  if (state.userId) cargarDiaActual();
+}
+
+async function crearUsuario() {
+  const nombre = document.getElementById('new-nombre').value.trim();
+  const email  = document.getElementById('new-email').value.trim();
+  if (!nombre || !email) { toast('Completa nombre y email', 'error'); return; }
+
+  try {
+    const res = await fetch(`${API}/usuarios/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, email })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error');
+    toast(`Usuario creado con ID ${data.usuario_id} ✓`);
+    closeModal();
+    await cargarUsuarios();
+    // Seleccionar el recién creado
+    document.getElementById('global-user-select').value = data.usuario_id;
+    onUserChange();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  PANEL PLANIFICACIÓN MES
+// ═══════════════════════════════════════════════════
+
+// Listas dinámicas ─────
+function addMeta() {
+  const list = document.getElementById('metas-list');
+  if (list.children.length >= 3) { toast('Máximo 3 metas', 'error'); return; }
+  const div = document.createElement('div');
+  div.className = 'dyn-item';
+  div.innerHTML = `<input type="text" placeholder="Nueva meta…" /><button class="remove-btn" onclick="removeItem(this)">✕</button>`;
+  list.appendChild(div);
+}
+
+function addActividad() {
+  const list = document.getElementById('actividades-list');
+  if (list.children.length >= 10) { toast('Máximo 10 actividades', 'error'); return; }
+  const div = document.createElement('div');
+  div.className = 'dyn-item';
+  div.innerHTML = `<input type="text" placeholder="Nueva actividad…" /><button class="remove-btn" onclick="removeItem(this)">✕</button>`;
+  list.appendChild(div);
+}
+
+function removeItem(btn) {
+  btn.parentElement.remove();
+}
+
+// Guardar planificación ─────
+async function planificarMes() {
+  if (!state.userId) { toast('Selecciona un usuario primero', 'error'); return; }
+
+  const anio = parseInt(document.getElementById('plan-anio').value);
+  const mes  = parseInt(document.getElementById('plan-mes').value);
+
+  const metas = [...document.querySelectorAll('#metas-list .dyn-item input')]
+    .map(i => i.value.trim()).filter(Boolean);
+  const actividades = [...document.querySelectorAll('#actividades-list .dyn-item input')]
+    .map(i => i.value.trim()).filter(Boolean);
+
+  if (metas.length < 1 || metas.length > 3) {
+    toast('Ingresa entre 1 y 3 metas', 'error'); return;
+  }
+  if (actividades.length < 5 || actividades.length > 10) {
+    toast('Ingresa entre 5 y 10 actividades', 'error'); return;
+  }
+
+  showSpinner('spinner-plan', true);
+  document.getElementById('btn-planificar').disabled = true;
+
+  try {
+    const res = await fetch(`${API}/meses/planificar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario_id: state.userId, anio, mes, metas, actividades })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error al guardar');
+    toast(`¡Mes planificado! ID: ${data.mes_planificado_id} ✓`);
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    showSpinner('spinner-plan', false);
+    document.getElementById('btn-planificar').disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  PANEL REGISTRO DIARIO
+// ═══════════════════════════════════════════════════
+
+async function cargarDiaActual() {
+  const fecha = document.getElementById('dia-fecha').value;
+  if (!fecha || !state.userId) return;
+
+  const [anio, mes] = fecha.split('-').map(Number);
+
+  try {
+    // Buscar la planificación del mes para obtener actividades y metas
+    const res = await fetch(`${API}/meses/${state.userId}/${anio}/${mes}`);
+    if (!res.ok) {
+      // No hay planificación para este mes
+      renderHabits([]);
+      document.getElementById('card-metas-dia').style.display = 'none';
+      document.getElementById('habits-hint').textContent =
+        'No hay planificación para este mes. Ve al panel "Planificar Mes" para crear una.';
+      document.getElementById('habits-hint').style.display = 'block';
+      document.getElementById('load-habits-wrap').style.display = 'none';
+      return;
+    }
+    const plan = await res.json();
+    state.mesId     = plan.id;
+    state.actividades = plan.actividades;
+
+    renderHabits(plan.actividades, fecha);
+    renderMetasDia(plan.metas);
+    document.getElementById('habits-hint').style.display = 'none';
+    document.getElementById('load-habits-wrap').style.display = 'none';
+
+    // Cargar registros existentes del día si los hay
+    await cargarRegistrosExistentes(fecha);
+
+  } catch (e) {
+    toast('Error al cargar la planificación del mes', 'error');
+  }
+}
+
+function renderMetasDia(metas) {
+  const card = document.getElementById('card-metas-dia');
+  const list = document.getElementById('metas-dia-list');
+  list.innerHTML = '';
+  if (!metas || metas.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  metas.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.className = 'meta-chip';
+    div.innerHTML = `<span class="meta-num">${i + 1}</span><span>${m.descripcion}</span>`;
+    list.appendChild(div);
+  });
+}
+
+function renderHabits(actividades, fecha) {
+  const list = document.getElementById('habit-list');
+  const progressWrap = document.getElementById('progress-wrap');
+  list.innerHTML = '';
+
+  if (actividades.length === 0) {
+    progressWrap.style.display = 'none';
+    return;
+  }
+
+  progressWrap.style.display = 'block';
+
+  actividades.forEach(act => {
+    const label = document.createElement('label');
+    label.className = 'habit-item';
+    label.dataset.id = act.id;
+    label.innerHTML = `
+      <input type="checkbox" value="${act.id}" />
+      <div class="check-box">✓</div>
+      <span class="habit-name">${act.nombre_actividad}</span>
+    `;
+    label.addEventListener('click', () => {
+      const cb = label.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+      label.classList.toggle('checked', cb.checked);
+      updateProgress();
+    });
+    list.appendChild(label);
+  });
+
+  updateProgress();
+}
+
+async function cargarRegistrosExistentes(fecha) {
+  // Intenta obtener los registros ya guardados para preseleccionar checkboxes
+  try {
+    const res = await fetch(`${API}/dia/registros?usuario_id=${state.userId}&fecha=${fecha}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.registros) {
+      data.registros.forEach(r => {
+        if (r.realizado) {
+          const lbl = document.querySelector(`.habit-item[data-id="${r.actividad_mes_id}"]`);
+          if (lbl) {
+            lbl.querySelector('input').checked = true;
+            lbl.classList.add('checked');
+          }
+        }
+      });
+      updateProgress();
+    }
+    if (data.nota_diario) {
+      document.getElementById('diario-texto').value = data.nota_diario;
+    }
+  } catch (e) {
+    // El endpoint puede no existir; silencioso
+  }
+}
+
+function updateProgress() {
+  const items = document.querySelectorAll('.habit-item');
+  const total = items.length;
+  const done  = [...items].filter(i => i.classList.contains('checked')).length;
+  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${done} / ${total}`;
+}
+
+async function guardarDia() {
+  if (!state.userId) { toast('Selecciona un usuario primero', 'error'); return; }
+  const fecha = document.getElementById('dia-fecha').value;
+  if (!fecha) { toast('Selecciona una fecha', 'error'); return; }
+  const texto = document.getElementById('diario-texto').value.trim();
+  if (!texto) { toast('Escribe al menos algo en tu diario', 'error'); return; }
+  if (state.actividades.length === 0) { toast('No hay hábitos cargados para este mes', 'error'); return; }
+
+  const registros = [...document.querySelectorAll('.habit-item')].map(lbl => ({
+    actividad_mes_id: parseInt(lbl.dataset.id),
+    realizado: lbl.classList.contains('checked')
+  }));
+
+  showSpinner('spinner-guardar', true);
+  document.getElementById('btn-guardar').disabled = true;
+
+  try {
+    const res = await fetch(`${API}/dia/registrar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        usuario_id: state.userId,
+        fecha,
+        registros_actividades: registros,
+        texto_diario: texto
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error al guardar');
+    toast('Registro del día guardado ✓');
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    showSpinner('spinner-guardar', false);
+    document.getElementById('btn-guardar').disabled = false;
+  }
+}
+
+async function pedirMotivacion() {
+  if (!state.userId) { toast('Selecciona un usuario primero', 'error'); return; }
+  const fecha = document.getElementById('dia-fecha').value;
+  if (!fecha) { toast('Selecciona una fecha', 'error'); return; }
+
+  showSpinner('spinner-ia', true);
+  document.getElementById('btn-ia').disabled = true;
+  document.getElementById('feedback-box').classList.remove('show');
+
+  try {
+    const res = await fetch(`${API}/ia/motivacion-diaria/${state.userId}?fecha_consulta=${fecha}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error con la IA');
+
+    document.getElementById('feedback-badge').textContent =
+      `${data.cumplimiento_porcentaje}% completado`;
+    document.getElementById('feedback-text').textContent = data.mensaje_motivacional;
+    document.getElementById('feedback-box').classList.add('show');
+  } catch (e) {
+    toast(e.message, 'error');
+  } finally {
+    showSpinner('spinner-ia', false);
+    document.getElementById('btn-ia').disabled = false;
+  }
+}
+</script>
+</body>
+</html>
